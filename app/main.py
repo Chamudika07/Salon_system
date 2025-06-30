@@ -1,9 +1,10 @@
 from fastapi import FastAPI
-from app.api import employee
+from app.api import employee , customer 
 
 app = FastAPI()
 
 app.include_router(employee.router, prefix="/employees", tags=["employees"])
+app.include_router(customer.router, prefix="/customers", tags=["customers"])
 
 @app.get("/")
 def read_root():
