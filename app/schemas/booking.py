@@ -13,6 +13,8 @@ class BookingOut(BaseModel):
     customer_id: int
     date: datetime
     status: str
+    customer_name: str
+    employee_name: str
 
     class Config:
         from_attributes = True  # For Pydantic v2

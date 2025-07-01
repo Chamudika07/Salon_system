@@ -6,12 +6,34 @@ from app.crud.booking import (
 )
 from app.db.dependency import get_db
 from app.core.deps import get_current_user , get_current_active_user 
+from app.crud.customer import get_customer
+from app.crud.employee import get_employee
+
 router = APIRouter()
 
 #create booking API
 @router.post("/", response_model=BookingOut)
-def create(booking: BookingCreate, db: Session = Depends(get_db) , current_user = Depends(get_current_active_user)):
-    return create_booking(db, booking)
+def create(
+    booking: BookingCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_active_user)
+):
+    customer = get_customer(db, booking.customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    if current_user.role != "customer" or current_user.email != customer.email:
+        raise HTTPException(status_code=403, detail="Only the owner (customer) can create a booking.")
+    db_booking = create_booking(db, booking)
+    employee = get_employee(db, booking.employee_id)
+    return {
+        "id": db_booking.id,
+        "employee_id": db_booking.employee_id,
+        "customer_id": db_booking.customer_id,
+        "date": db_booking.date,
+        "status": db_booking.status,
+        "customer_name": customer.name if customer else None,
+        "employee_name": employee.name if employee else None
+    }
 
 #get bookings API
 @router.get("/", response_model=list[BookingOut])
