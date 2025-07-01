@@ -4,6 +4,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
+    role: str = "customer"
 
 class UserLogin(BaseModel):
     username: str
@@ -18,7 +19,7 @@ class UserOut(BaseModel):
     username: str
     email: str
     is_active: bool
-    is_admin: bool
+    role: str
 
     class Config:
         from_attributes = True
