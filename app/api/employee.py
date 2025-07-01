@@ -5,7 +5,7 @@ from app.crud.employee import (
     create_employee, get_employee, get_employees, update_employee, delete_employee
 )
 from app.db.dependency import get_db
-
+from app.core.deps import get_current_active_user , get_current_admin_user
 router = APIRouter()
 
 #employee create api
@@ -15,7 +15,7 @@ def create(employee: EmployeeCreate, db: Session = Depends(get_db)):
 
 #employees get api
 @router.get("/", response_model=list[EmployeeOut])
-def list_employees(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def list_employees(skip: int = 0, limit: int = 10, db: Session = Depends(get_db) , current_user = Depends(get_current_active_user)):
     return get_employees(db, skip=skip, limit=limit)
 
 #employee get using id api
@@ -36,7 +36,7 @@ def update(employee_id: int, employee: EmployeeCreate, db: Session = Depends(get
 
 #employee delet with id api
 @router.delete("/{employee_id}")
-def delete(employee_id: int, db: Session = Depends(get_db)):
+def delete(employee_id: int, db: Session = Depends(get_db) , current_admin = Depends(get_current_admin_user)):
     deleted = delete_employee(db, employee_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Employee not found")
