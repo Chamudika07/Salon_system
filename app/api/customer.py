@@ -82,7 +82,7 @@ def update(
 
 #customers delet api
 @router.delete("/{customer_id}")
-def delete(customer_id: int, db: Session = Depends(get_db)):
+def delete(customer_id: int, db: Session = Depends(get_db), current_user=Depends(admin_required)):
     deleted = delete_customer(db, customer_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Customer not found")
