@@ -25,6 +25,17 @@ def admin_or_employee_required(current_user=Depends(get_current_active_user)):
         )
     return current_user
 
+def admin_or_owner_required(customer_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+    customer = get_customer(db, customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    if current_user.role == "admin" or current_user.email == customer.email:
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Only the owner or admin can perform this action"
+    )
+
 #customer create api
 @router.post("/", response_model=CustomerOut)
 def create_customer(
@@ -58,7 +69,12 @@ def read_customer(
 
 #customers update api
 @router.put("/{customer_id}", response_model=CustomerOut)
-def update(customer_id: int, customer: CustomerCreate, db: Session = Depends(get_db)):
+def update(
+    customer_id: int,
+    customer: CustomerCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(admin_or_owner_required)
+):
     updated = update_customer(db, customer_id, customer)
     if not updated:
         raise HTTPException(status_code=404, detail="Customer not found")
