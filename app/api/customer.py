@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.schemas.customer import CustomerCreate, CustomerOut
 from app.crud.customer import (
-    get_customer, get_customers, update_customer, delete_customer
+    get_customer, get_customers, update_customer, delete_customer, create_customer as crud_create_customer
 )
 from app.db.dependency import get_db
 from app.core.deps import get_current_user , get_current_active_user
@@ -17,6 +17,14 @@ def admin_required(current_user=Depends(get_current_active_user)):
         )
     return current_user
 
+def admin_or_employee_required(current_user=Depends(get_current_active_user)):
+    if current_user.role not in ["admin", "employee"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins or employees can perform this action"
+        )
+    return current_user
+
 #customer create api
 @router.post("/", response_model=CustomerOut)
 def create_customer(
@@ -24,16 +32,25 @@ def create_customer(
     db: Session = Depends(get_db),
     current_user=Depends(admin_required)
 ):
-    pass  # This is a placeholder for future code
+    return crud_create_customer(db, customer)
 
 #customers get api 
 @router.get("/", response_model=list[CustomerOut])
-def list_customers(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def list_customers(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user=Depends(admin_or_employee_required)
+):
     return get_customers(db, skip=skip, limit=limit)
 
 #customers get using id api
 @router.get("/{customer_id}", response_model=CustomerOut)
-def read_customer(customer_id: int, db: Session = Depends(get_db)):
+def read_customer(
+    customer_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(admin_or_employee_required)
+):
     customer = get_customer(db, customer_id)
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
