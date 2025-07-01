@@ -1,17 +1,30 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.schemas.customer import CustomerCreate, CustomerOut
 from app.crud.customer import (
-    create_customer, get_customer, get_customers, update_customer, delete_customer
+    get_customer, get_customers, update_customer, delete_customer
 )
 from app.db.dependency import get_db
+from app.core.deps import get_current_user , get_current_active_user
 
 router = APIRouter()
 
+def admin_required(current_user=Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can perform this action"
+        )
+    return current_user
+
 #customer create api
 @router.post("/", response_model=CustomerOut)
-def create(customer: CustomerCreate, db: Session = Depends(get_db)):
-    return create_customer(db, customer)
+def create_customer(
+    customer: CustomerCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(admin_required)
+):
+    pass  # This is a placeholder for future code
 
 #customers get api 
 @router.get("/", response_model=list[CustomerOut])
