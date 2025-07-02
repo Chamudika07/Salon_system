@@ -5,7 +5,7 @@ from app.crud.booking import (
     create_booking, get_booking, get_bookings, update_booking, delete_booking
 )
 from app.db.dependency import get_db
-from app.core.deps import get_current_user , get_current_active_user 
+from app.core.deps import get_current_user , get_current_active_user, get_current_admin_user
 from app.crud.customer import get_customer
 from app.crud.employee import get_employee 
 from app.crud.booking import serialize_booking 
@@ -43,7 +43,7 @@ def list_bookings(skip: int = 0, limit: int = 10, db: Session = Depends(get_db),
 
 #get with id booking API
 @router.get("/{booking_id}", response_model=BookingOut)
-def read_booking(booking_id: int, db: Session = Depends(get_db)):
+def read_booking(booking_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin_user)):
     booking = get_booking(db, booking_id)
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
