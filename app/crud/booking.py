@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from app.models.booking import Booking
 from app.schemas.booking import BookingCreate
+from app.crud.customer import get_customer
+from app.crud.employee import get_employee
 
 #create booking func
 def create_booking(db: Session, booking: BookingCreate):
@@ -35,3 +37,16 @@ def delete_booking(db: Session, booking_id: int):
         db.delete(db_booking)
         db.commit()
     return db_booking
+
+def serialize_booking(db, booking):
+    customer = get_customer(db, booking.customer_id)
+    employee = get_employee(db, booking.employee_id)
+    return {
+        "id": booking.id,
+        "employee_id": booking.employee_id,
+        "customer_id": booking.customer_id,
+        "date": booking.date,
+        "status": booking.status,
+        "customer_name": customer.name if customer else None,
+        "employee_name": employee.name if employee else None
+    }
