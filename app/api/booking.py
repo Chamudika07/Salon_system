@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.schemas.booking import BookingCreate, BookingOut
 from app.crud.booking import (
@@ -49,16 +49,27 @@ def read_booking(booking_id: int, db: Session = Depends(get_db), current_user=De
         raise HTTPException(status_code=404, detail="Booking not found")
     return serialize_booking(db, booking)
 
+def owner_required(booking_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
+    booking_obj = get_booking(db, booking_id)
+    if not booking_obj:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    customer_id_value = int(booking_obj.__dict__["customer_id"])
+    customer = get_customer(db, customer_id_value)
+    if not customer or current_user.email != customer.email:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the owner can perform this action.")
+    return current_user
+
 #update with id booking API
 @router.put("/{booking_id}", response_model=BookingOut)
-def update(booking_id: int, booking: BookingCreate, db: Session = Depends(get_db)):
+def update(booking_id: int, booking: BookingCreate, db: Session = Depends(get_db), current_user=Depends(owner_required)):
     updated = update_booking(db, booking_id, booking)
     if not updated:
         raise HTTPException(status_code=404, detail="Booking not found")
     return serialize_booking(db, updated)
+
 #delet id with booking API
 @router.delete("/{booking_id}")
-def delete(booking_id: int, db: Session = Depends(get_db)):
+def delete(booking_id: int, db: Session = Depends(get_db), current_user=Depends(owner_required)):
     deleted = delete_booking(db, booking_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Booking not found")
