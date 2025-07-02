@@ -45,17 +45,17 @@ def create(
 
 #get availabilites API
 @router.get("/", response_model=list[EmployeeAvailabilityOut])
-def list_availabilities(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def list_availabilities(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     return get_availabilities(db, skip=skip, limit=limit)
 
 #get availabilites employee id API
 @router.get("/employee/{employee_id}", response_model=list[EmployeeAvailabilityOut])
-def get_employee_schedule(employee_id: int, db: Session = Depends(get_db)):
+def get_employee_schedule(employee_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     return get_employee_availabilities(db, employee_id)
 
 #get availabilites id API
 @router.get("/{availability_id}", response_model=EmployeeAvailabilityOut)
-def read_availability(availability_id: int, db: Session = Depends(get_db)):
+def read_availability(availability_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     availability = get_availability(db, availability_id)
     if not availability:
         raise HTTPException(status_code=404, detail="Availability not found")
