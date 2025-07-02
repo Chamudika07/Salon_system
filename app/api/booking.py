@@ -36,7 +36,7 @@ def create(
     }
 
 #get bookings API
-@router.get("/", response_model=list[BookingOut])@router.get("/", response_model=list[BookingOut])
+@router.get("/", response_model=list[BookingOut])
 def list_bookings(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     bookings = get_bookings(db, skip=skip, limit=limit)
     return [serialize_booking(db, b) for b in bookings]
