@@ -5,22 +5,23 @@ from app.crud.product import (
     create_product, get_product, get_products, update_product, delete_product
 )
 from app.db.dependency import get_db
+from app.core.deps import get_current_admin_user, get_current_active_user
 
 router = APIRouter()
 
 #create product API
 @router.post("/", response_model=ProductOut)
-def create(product: ProductCreate, db: Session = Depends(get_db)):
+def create(product: ProductCreate, db: Session = Depends(get_db), current_user=Depends(get_current_admin_user)):
     return create_product(db, product)
 
 #get products API
 @router.get("/", response_model=list[ProductOut])
-def list_products(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def list_products(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user=Depends(get_current_active_user)):
     return get_products(db, skip=skip, limit=limit)
 
 #get with id product API
 @router.get("/{product_id}", response_model=ProductOut)
-def read_product(product_id: int, db: Session = Depends(get_db)):
+def read_product(product_id: int, db: Session = Depends(get_db) , current_user=Depends(get_current_admin_user)):
     product = get_product(db, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -28,7 +29,7 @@ def read_product(product_id: int, db: Session = Depends(get_db)):
 
 #update with id product API
 @router.put("/{product_id}", response_model=ProductOut)
-def update(product_id: int, product: ProductCreate, db: Session = Depends(get_db)):
+def update(product_id: int, product: ProductCreate, db: Session = Depends(get_db), current_user=Depends(get_current_admin_user)):
     updated = update_product(db, product_id, product)
     if not updated:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -36,7 +37,7 @@ def update(product_id: int, product: ProductCreate, db: Session = Depends(get_db
 
 #delet with id product API
 @router.delete("/{product_id}")
-def delete(product_id: int, db: Session = Depends(get_db)):
+def delete(product_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin_user)):
     deleted = delete_product(db, product_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Product not found")
