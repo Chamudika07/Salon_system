@@ -16,10 +16,10 @@ export function useBookings() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get("/bookings")
+    api.get<Booking[]>("/bookings")
       .then(res => setBookings(res.data))
-      .catch(err => setError("Failed to fetch bookings"))
-      .finally(() => setLoading(false));
+      .catch(() => setError("Failed to fetch bookings"))
+      .then(() => setLoading(false));
   }, []);
 
   return { bookings, loading, error };
