@@ -3,11 +3,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useBookings } from "@/hooks/useBookings";
+import { useEmployees } from "@/hooks/useEmployees";
+import { useProducts } from "@/hooks/useProducts";
 
 export default function DashboardPage() {
   const { token } = useAuth();
   const router = useRouter();
   const { bookings, loading, error } = useBookings();
+  const { employees, loading: loadingEmployees, error: errorEmployees } = useEmployees();
+  const { products, loading: loadingProducts, error: errorProducts } = useProducts();
 
   useEffect(() => {
     if (!token) {
@@ -35,8 +39,32 @@ export default function DashboardPage() {
             ))}
           </ul>
         </div>
-        <div className="bg-white p-6 rounded shadow">Employees</div>
-        <div className="bg-white p-6 rounded shadow">Products</div>
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">Employees</h2>
+          {loadingEmployees && <div>Loading...</div>}
+          {errorEmployees && <div className="text-red-500">{errorEmployees}</div>}
+          <ul>
+            {employees.slice(0, 5).map((emp) => (
+              <li key={emp.id} className="mb-2">
+                <span className="font-medium">Name:</span> {emp.name} <br />
+                <span className="font-medium">Email:</span> {emp.email}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-xl font-semibold mb-4">Products</h2>
+          {loadingProducts && <div>Loading...</div>}
+          {errorProducts && <div className="text-red-500">{errorProducts}</div>}
+          <ul>
+            {products.slice(0, 5).map((prod) => (
+              <li key={prod.id} className="mb-2">
+                <span className="font-medium">Name:</span> {prod.name} <br />
+                <span className="font-medium">Price:</span> ${prod.price}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
