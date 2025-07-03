@@ -1,7 +1,17 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api import employee , customer , booking , product , sale , payment , employee_availability , auth
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://your-frontend-domain.com"],  # Your Next.js frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 app.include_router(employee.router, prefix="/employees", tags=["employees"])
 app.include_router(customer.router, prefix="/customers", tags=["customers"])
