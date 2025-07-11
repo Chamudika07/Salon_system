@@ -2,35 +2,52 @@
 import { useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
+
+interface RegisterResponse {
+  access_token: string;
+  token_type: string;
+}
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    role: "customer" // Default role
-  });
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
+    
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    // Validate password strength
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+    
     setLoading(true);
     
+    console.log("Registration attempt started for username:", username);
+    
     try {
-      await axios.post(
+      const response = await axios.post<RegisterResponse>(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/auth/register`,
-        formData,
+        {
+          username,
+          email,
+          password
+        },
         {
           headers: {
             "Content-Type": "application/json",
@@ -38,19 +55,19 @@ export default function RegisterPage() {
         }
       );
       
-      setSuccess("Registration successful! You can now log in.");
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-        role: "customer"
-      });
+      console.log("Registration response received:", response.data);
+      
+      // Auto-login after successful registration
+      login(response.data.access_token);
+      
+      console.log("Registration successful, redirecting to dashboard...");
+      
+      // Redirect to dashboard
+      router.push("/dashboard");
     } catch (err: unknown) {
+      console.error("Registration error:", err);
       const error = err as { response?: { data?: { detail?: string } } };
-      setError(
-        error.response?.data?.detail || 
-        "Registration failed. Please try again."
-      );
+      setError(error.response?.data?.detail || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,12 +84,6 @@ export default function RegisterPage() {
           </div>
         )}
         
-        {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            {success}
-          </div>
-        )}
-        
         <form onSubmit={handleRegister} className="space-y-6">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
@@ -80,10 +91,9 @@ export default function RegisterPage() {
             </label>
             <input
               id="username"
-              name="username"
               type="text"
-              value={formData.username}
-              onChange={handleChange}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -91,14 +101,13 @@ export default function RegisterPage() {
           
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
+              Email Address
             </label>
             <input
               id="email"
-              name="email"
               type="email"
-              value={formData.email}
-              onChange={handleChange}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -110,30 +119,27 @@ export default function RegisterPage() {
             </label>
             <input
               id="password"
-              name="password"
               type="password"
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
+            <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters long</p>
           </div>
           
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-              Role
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password
             </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="customer">Customer</option>
-              <option value="employee">Employee</option>
-              <option value="admin">Admin</option>
-            </select>
+              required
+            />
           </div>
           
           <button
@@ -141,7 +147,7 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {loading ? "Registering..." : "Register"}
+            {loading ? "Creating Account..." : "Register"}
           </button>
         </form>
         

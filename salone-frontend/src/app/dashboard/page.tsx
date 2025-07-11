@@ -196,7 +196,7 @@ export default function DashboardPage() {
                         {booking.customer_name || `Customer ${booking.customer_id}`}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {new Date(booking.date).toLocaleDateString()} at {new Date(booking.date).toLocaleTimeString()}
+                        {new Date(booking.date).toLocaleString()}
                       </p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${

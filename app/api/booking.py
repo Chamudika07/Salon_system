@@ -9,6 +9,9 @@ from app.core.deps import get_current_user , get_current_active_user, get_curren
 from app.crud.customer import get_customer
 from app.crud.employee import get_employee 
 from app.crud.booking import serialize_booking 
+from datetime import datetime
+import pytz
+
 router = APIRouter()
 
 #create booking API
@@ -18,6 +21,14 @@ def create(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
+    # Validate that booking date is not in the past
+    utc_now = datetime.now(pytz.UTC)
+    if booking.date < utc_now:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot create booking in the past"
+        )
+    
     customer = get_customer(db, booking.customer_id)
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -62,6 +73,14 @@ def owner_required(booking_id: int, db: Session = Depends(get_db), current_user=
 #update with id booking API
 @router.put("/{booking_id}", response_model=BookingOut)
 def update(booking_id: int, booking: BookingCreate, db: Session = Depends(get_db), current_user=Depends(owner_required)):
+    # Validate that booking date is not in the past
+    utc_now = datetime.now(pytz.UTC)
+    if booking.date < utc_now:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot update booking to a past date"
+        )
+    
     updated = update_booking(db, booking_id, booking)
     if not updated:
         raise HTTPException(status_code=404, detail="Booking not found")

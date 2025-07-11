@@ -1,36 +1,27 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useBookings } from "../../hooks/useBookings";
+import { useCustomers, type Customer } from "../../hooks/useCustomers";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEmployees } from "../../hooks/useEmployees";
-import { useCustomers } from "../../hooks/useCustomers";
 import api from "../../lib/api";
-import { convertLocalToUTC, convertUTCToLocal, formatDateTimeForDisplay, getUserTimezone } from "../../utils/timezone";
 
-interface BookingFormData {
-  employee_id: number;
-  customer_id: number;
-  date: string;
-  status: string;
+interface CustomerFormData {
+  name: string;
+  email: string;
+  phone: string;
 }
 
-
-
-export default function BookingsPage() {
+export default function CustomersPage() {
   const { token, isInitialized } = useAuth();
   const router = useRouter();
-  const { bookings, loading, error, refetch } = useBookings();
-  const { employees } = useEmployees();
-  const { customers } = useCustomers();
+  const { customers, loading, error, refetch } = useCustomers();
   
   const [showForm, setShowForm] = useState(false);
-  const [editingBooking, setEditingBooking] = useState<number | null>(null);
-  const [formData, setFormData] = useState<BookingFormData>({
-    employee_id: 0,
-    customer_id: 0,
-    date: "",
-    status: "Scheduled"
+  const [editingCustomer, setEditingCustomer] = useState<number | null>(null);
+  const [formData, setFormData] = useState<CustomerFormData>({
+    name: "",
+    email: "",
+    phone: ""
   });
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -47,21 +38,15 @@ export default function BookingsPage() {
     setFormError("");
 
     try {
-      // Convert local datetime to UTC before sending to backend
-      const bookingData = {
-        ...formData,
-        date: convertLocalToUTC(formData.date)
-      };
-
-      if (editingBooking) {
-        await api.put(`/bookings/${editingBooking}`, bookingData);
+      if (editingCustomer) {
+        await api.put(`/customers/${editingCustomer}`, formData);
       } else {
-        await api.post("/bookings", bookingData);
+        await api.post("/customers", formData);
       }
       
       setShowForm(false);
-      setEditingBooking(null);
-      setFormData({ employee_id: 0, customer_id: 0, date: "", status: "Scheduled" });
+      setEditingCustomer(null);
+      setFormData({ name: "", email: "", phone: "" });
       refetch();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } };
@@ -71,33 +56,32 @@ export default function BookingsPage() {
     }
   };
 
-  const handleEdit = (booking: Booking) => {
-    setEditingBooking(booking.id);
+  const handleEdit = (customer: Customer) => {
+    setEditingCustomer(customer.id);
     setFormData({
-      employee_id: booking.employee_id,
-      customer_id: booking.customer_id,
-      date: convertUTCToLocal(booking.date), // Convert UTC to local for form
-      status: booking.status
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone
     });
     setShowForm(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this booking?")) {
+    if (confirm("Are you sure you want to delete this customer?")) {
       try {
-        await api.delete(`/bookings/${id}`);
+        await api.delete(`/customers/${id}`);
         refetch();
       } catch (err: unknown) {
-        console.error("Delete booking error:", err);
-        alert("Failed to delete booking");
+        console.error("Delete customer error:", err);
+        alert("Failed to delete customer");
       }
     }
   };
 
   const resetForm = () => {
     setShowForm(false);
-    setEditingBooking(null);
-    setFormData({ employee_id: 0, customer_id: 0, date: "", status: "Scheduled" });
+    setEditingCustomer(null);
+    setFormData({ name: "", email: "", phone: "" });
     setFormError("");
   };
 
@@ -116,21 +100,21 @@ export default function BookingsPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Bookings Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Customers Management</h1>
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
         >
-          + New Booking
+          + New Customer
         </button>
       </div>
 
-      {/* Booking Form Modal */}
+      {/* Customer Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
             <h2 className="text-2xl font-bold mb-6">
-              {editingBooking ? "Edit Booking" : "New Booking"}
+              {editingCustomer ? "Edit Customer" : "New Customer"}
             </h2>
             
             {formError && (
@@ -141,71 +125,45 @@ export default function BookingsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Employee
-                </label>
-                <select
-                  value={formData.employee_id}
-                  onChange={(e) => setFormData({...formData, employee_id: Number(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Employee</option>
-                  {employees?.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Customer
-                </label>
-                <select
-                  value={formData.customer_id}
-                  onChange={(e) => setFormData({...formData, customer_id: Number(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Customer</option>
-                  {customers?.map((cust) => (
-                    <option key={cust.id} value={cust.id}>{cust.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date & Time (Your Local Time)
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
                 </label>
                 <input
-                  type="datetime-local"
-                  value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  min={new Date().toISOString().slice(0, 16)}
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Please select a future date and time • Timezone: {getUserTimezone()}
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
                 </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                <input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                >
-                  <option value="Scheduled">Scheduled</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -214,7 +172,7 @@ export default function BookingsPage() {
                   disabled={formLoading}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium disabled:opacity-50"
                 >
-                  {formLoading ? "Saving..." : (editingBooking ? "Update" : "Create")}
+                  {formLoading ? "Saving..." : (editingCustomer ? "Update" : "Create")}
                 </button>
                 <button
                   type="button"
@@ -229,12 +187,12 @@ export default function BookingsPage() {
         </div>
       )}
 
-      {/* Bookings Table */}
+      {/* Customers Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading bookings...</p>
+            <p className="mt-2 text-gray-600">Loading customers...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center text-red-600">{error}</div>
@@ -247,16 +205,13 @@ export default function BookingsPage() {
                     ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
+                    Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Employee
+                    Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time (Local)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Phone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -264,40 +219,30 @@ export default function BookingsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {bookings && bookings.length > 0 ? (
-                  bookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-gray-50">
+                {customers && customers.length > 0 ? (
+                  customers.map((customer) => (
+                    <tr key={customer.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{booking.id}
+                        #{customer.id}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {booking.customer_name || `Customer ${booking.customer_id}`}
+                        {customer.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {booking.employee_name || `Employee ${booking.employee_id}`}
+                        {customer.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDateTimeForDisplay(booking.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          booking.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          booking.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' :
-                          booking.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {booking.status}
-                        </span>
+                        {customer.phone}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
-                          onClick={() => handleEdit(booking)}
+                          onClick={() => handleEdit(customer)}
                           className="text-blue-600 hover:text-blue-900 mr-4"
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDelete(booking.id)}
+                          onClick={() => handleDelete(customer.id)}
                           className="text-red-600 hover:text-red-900"
                         >
                           Delete
@@ -307,8 +252,8 @@ export default function BookingsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                      No bookings found. Create your first booking!
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                      No customers found. Add your first customer!
                     </td>
                   </tr>
                 )}
@@ -319,4 +264,4 @@ export default function BookingsPage() {
       </div>
     </div>
   );
-}
+} 
