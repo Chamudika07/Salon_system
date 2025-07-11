@@ -2,7 +2,7 @@
 import { useState } from "react";
 import axios from "axios";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
 
 interface LoginResponse {

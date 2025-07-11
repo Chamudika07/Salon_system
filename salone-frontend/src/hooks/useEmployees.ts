@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import api from "../lib/api";
 
 export type Employee = {
   id: number;
   name: string;
   email: string;
+  role?: string;
   // Add more fields as needed
 };
 
@@ -13,7 +14,7 @@ export function useEmployees() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchEmployees = () => {
     api.get<Employee[]>("/employees")
       .then(res => {
         setEmployees(res.data);
@@ -23,7 +24,11 @@ export function useEmployees() {
         setError("Failed to fetch employees");
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchEmployees();
   }, []);
 
-  return { employees, loading, error };
+  return { employees, loading, error, refetch: fetchEmployees };
 }

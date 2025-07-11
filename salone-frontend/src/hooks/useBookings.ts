@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import api from "../lib/api";
 
 export type Booking = {
   id: number;
@@ -7,6 +7,8 @@ export type Booking = {
   customer_id: number;
   date: string;
   status: string;
+  customer_name?: string;
+  employee_name?: string;
   // Add more fields as needed
 };
 
@@ -15,7 +17,7 @@ export function useBookings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchBookings = () => {
     console.log("Fetching bookings...");
     api.get<Booking[]>("/bookings")
       .then(res => {
@@ -27,7 +29,11 @@ export function useBookings() {
         setError("Failed to fetch bookings");
       })
       .then(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchBookings();
   }, []);
 
-  return { bookings, loading, error };
+  return { bookings, loading, error, refetch: fetchBookings };
 }

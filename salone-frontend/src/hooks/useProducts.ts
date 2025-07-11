@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import api from "../lib/api";
 
 export type Product = {
   id: number;
@@ -14,7 +14,7 @@ export function useProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchProducts = () => {
     api.get<Product[]>("/products")
       .then(res => {
         setProducts(res.data as Product[]);
@@ -24,7 +24,11 @@ export function useProducts() {
         setError("Failed to fetch products");
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
-  return { products, loading, error };
+  return { products, loading, error, refetch: fetchProducts };
 }
