@@ -7,6 +7,7 @@ export default function Navbar() {
       <Link href="/bookings" className="hover:underline">Bookings</Link>
       <Link href="/employees" className="hover:underline">Employees</Link>
       <Link href="/products" className="hover:underline">Products</Link>
+      <Link href="/test" className="hover:underline text-yellow-300">Debug Test</Link>
       {/* Add more links as needed */}
     </nav>
   );

@@ -15,7 +15,7 @@ export function useProducts() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get("/products")
+    api.get<Product[]>("/products")
       .then(res => {
         setProducts(res.data as Product[]);
         setLoading(false);

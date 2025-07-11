@@ -2,6 +2,8 @@
 import { useState } from "react";
 import axios from "axios";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface LoginResponse {
   access_token: string;
@@ -13,17 +15,23 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     
+    console.log("Login attempt started for username:", username);
+    
     try {
       // Your login endpoint expects form data, not JSON
       const formData = new FormData();
       formData.append("username", username);
       formData.append("password", password);
+      
+      console.log("Sending login request to:", `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/auth/login`);
       
       const response = await axios.post<LoginResponse>(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/auth/login`,
@@ -35,13 +43,18 @@ export default function LoginPage() {
         }
       );
       
-      // Store the token
-      localStorage.setItem("token", response.data.access_token);
-      localStorage.setItem("tokenType", response.data.token_type);
+      console.log("Login response received:", response.data);
+      console.log("Access token:", response.data.access_token ? "Present" : "Missing");
       
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
+      // Use the AuthContext login function instead of directly setting localStorage
+      login(response.data.access_token);
+      
+      console.log("Login function called, redirecting to dashboard...");
+      
+      // Redirect to dashboard using Next.js router
+      router.push("/dashboard");
     } catch (err: unknown) {
+      console.error("Login error:", err);
       const error = err as { response?: { data?: { detail?: string } } };
       setError(error.response?.data?.detail || "Login failed. Please try again.");
     } finally {

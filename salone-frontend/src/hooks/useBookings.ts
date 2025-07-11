@@ -16,9 +16,16 @@ export function useBookings() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("Fetching bookings...");
     api.get<Booking[]>("/bookings")
-      .then(res => setBookings(res.data))
-      .catch(() => setError("Failed to fetch bookings"))
+      .then(res => {
+        console.log("Bookings response:", res.data);
+        setBookings(res.data);
+      })
+      .catch((err) => {
+        console.error("Bookings error:", err);
+        setError("Failed to fetch bookings");
+      })
       .then(() => setLoading(false));
   }, []);
 
